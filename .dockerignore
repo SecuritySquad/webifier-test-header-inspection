@@ -1,0 +1,9 @@
+/.idea/
+/out/
+/res/browsers.json
+/src/collect.py
+/test/
+.gitignore
+.travis.yml
+README.md
+webifier-test-header-inspection.iml
