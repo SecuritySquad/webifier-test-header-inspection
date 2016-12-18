@@ -60,7 +60,7 @@ except RequestException as e:
     exit(2)
 
 
-def get_responses(configurations: list):
+def get_responses(configurations):
     for configuration in configurations:
         configuration['response'] = requests.get(args.url, headers=configuration['headers']).text
 
@@ -74,9 +74,7 @@ def check_ratios():
     result = {"malicous": False, "info": {"ratio": 1.0}}
 
     for config_index, configuration in enumerate(configurations):
-        print(config_index + 1)
         for other_config_index, other_headers in enumerate(configurations[config_index + 1:]):
-            print('{} - {}'.format(config_index, other_config_index))
             ratio = SequenceMatcher(None, configuration['response'], other_headers['response']).ratio()
             ratios.append(ratio)
             if ratio < 0.999:
@@ -86,4 +84,4 @@ def check_ratios():
 
 
 result = check_ratios()
-print(json.dumps(result))
+print(args.id + ": " + json.dumps(result))
