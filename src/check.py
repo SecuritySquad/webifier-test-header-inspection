@@ -71,14 +71,14 @@ get_responses(configurations)
 def check_ratios():
     ratios = []
     size = len(configurations)
-    result = {"malicous": False, "info": {"ratio": 1.0}}
+    result = {"malicious": False, "info": {"ratio": 1.0}}
 
     for config_index, configuration in enumerate(configurations):
         for other_config_index, other_headers in enumerate(configurations[config_index + 1:]):
             ratio = SequenceMatcher(None, configuration['response'], other_headers['response']).ratio()
             ratios.append(ratio)
             if ratio < 0.999:
-                result["malicous"] = True
+                result["malicious"] = True
                 result["info"]["ratio"] = ratio
     return result
 
