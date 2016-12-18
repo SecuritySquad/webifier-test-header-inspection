@@ -1,4 +1,5 @@
 import argparse
+import json
 import pprint
 from difflib import SequenceMatcher
 
@@ -59,7 +60,7 @@ except RequestException as e:
     exit(2)
 
 
-def get_responses(list: configurations):
+def get_responses(configurations: list):
     for configuration in configurations:
         configuration['response'] = requests.get(args.url, headers=configuration['headers']).text
 
@@ -67,16 +68,22 @@ def get_responses(list: configurations):
 get_responses(configurations)
 
 
-def calculate_ratios():
+def check_ratios():
     ratios = []
+    size = len(configurations)
+    result = {"malicous": False, "info": {"ratio": 100}}
+
     for config_index, configuration in enumerate(configurations):
         print(config_index + 1)
         for other_config_index, other_headers in enumerate(configurations[config_index + 1:]):
             print('{} - {}'.format(config_index, other_config_index))
             ratio = SequenceMatcher(None, configuration['response'], other_headers['response']).ratio()
             ratios.append(ratio)
+            if (ratio < 99.9):
+                result["malicous"] = True
+                result["info"]["ratio"] = ratio
+    return result
 
 
-calculate_ratios()
-# print(ratios[-1])
-print(len(configurations))
+result = check_ratios()
+print(result)

@@ -1,9 +1,11 @@
-FROM apline:latest
+FROM debian:latest
 
 COPY . /tmp/
+
+RUN apt-get update -y
+
+RUN apt-get install python python-pip -y
+
 RUN pip install --requirement /tmp/requirements.txt
 
-RUN apt-get update-y
-
-
-CMD python
+CMD python /tmp/check.py $ID $URL
