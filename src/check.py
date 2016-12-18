@@ -86,4 +86,4 @@ def check_ratios():
 
 
 result = check_ratios()
-print(result)
+print(json.dumps(result))
