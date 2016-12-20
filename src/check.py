@@ -1,87 +1,72 @@
 import argparse
 import json
-import pprint
 from difflib import SequenceMatcher
+from urllib.parse import urlparse
 
+import numpy.core
 import requests
-from  requests.exceptions import *
+from requests.exceptions import *
+
+from collect import read_browsers
 
 
-def dump(var):
-    pprint.pprint(dir(var))
+def main():
+    parser = argparse.ArgumentParser(description="Test website for Header Inspection.")
+    parser.add_argument('-u', type=str, required=True, help="specifies the URL to be checked", metavar="URL",
+                        dest='url')
+    parser.add_argument('-i', type=str, help="specifies the ID for this test", metavar="test_id", dest='id')
+    args = parser.parse_args()
+
+    try:
+        requests.head(args.url)
+    except RequestException as e:
+        print(e)
+        exit(2)
+
+    browsers = read_browsers()
+
+    fetch_responses(browsers, args.url)
+
+    result = generate_result(browsers)
+
+    output = '{}: {}'.format(args.id, json.dumps(result))
+    print(output)
 
 
-def save_to_file(text, file_name):
-    file = open(file_name, "w")
-    file.write(text)
-    file.close()
+def fetch_responses(browsers, url):
+    for browser in browsers:
+        parse = urlparse(url)
+        host = parse.netloc or None
+        if host:
+            browser['headers']['Host'] = host
+        browser['response'] = requests.get(url, headers=browser['headers']).text
 
 
-parser = argparse.ArgumentParser(description="Test website for Header Inspection.")
-parser.add_argument('-u', type=str, required=True, help="specifies the URL to be checked", metavar="URL", dest='url')
-parser.add_argument('-i', type=str, help="specifies the ID for this test", metavar="test_id", dest='id')
-args = parser.parse_args()
-
-configurations = [
-    {
-        'name': 'WINDOWS_10_FIREFOX_49',
-        'headers': {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Encoding': 'gzip, deflate',
-            'Accept-Language': 'de,en-US;q=0.7,en;q=0.3',
-            'Cache-Control': 'max-age=0',
-            'Connection': 'keep-alive',
-            'Host': 'browserspy.dk',
-            'Upgrade-Insecure-Requests': '1',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0',
-        },
-    },
-    {
-        'name': 'WINDOWS_10_CHROME_45',
-        'headers': {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Encoding': 'gzip, deflate, sdch',
-            'Accept-Language': 'en-US,en;q=0.8,de;q=0.6',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'DNT': '1',
-            'Host': 'browserspy.dk',
-            'Pragma': 'no-cache',
-            'Upgrade-Insecure-Requests': '1',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36',
-        },
-    },
-]
-
-try:
-    requests.head(args.url)
-except RequestException as e:
-    print(e)
-    exit(2)
-
-
-def get_responses(configurations):
-    for configuration in configurations:
-        configuration['response'] = requests.get(args.url, headers=configuration['headers']).text
-
-
-get_responses(configurations)
-
-
-def check_ratios():
+def generate_result(browsers):
+    malicious = False
     ratios = []
-    size = len(configurations)
-    result = {"malicious": False, "info": {"ratio": 1.0}}
-
-    for config_index, configuration in enumerate(configurations):
-        for other_config_index, other_headers in enumerate(configurations[config_index + 1:]):
-            ratio = SequenceMatcher(None, configuration['response'], other_headers['response']).ratio()
+    worst_ratio = 1.0
+    for browser_index, browser in enumerate(browsers[:-1]):
+        for other_browser_index, other_browser in enumerate(browsers[browser_index + 1:]):
+            ratio = SequenceMatcher(None, browser['response'], other_browser['response']).ratio()
             ratios.append(ratio)
-            if ratio < 0.999:
-                result["malicious"] = True
-                result["info"]["ratio"] = ratio
-    return result
+            if ratio < worst_ratio:
+                worst_ratio = ratio
+                if ratio < 0.999:
+                    malicious = True
+
+        mean_ratio = numpy.mean(ratios)
+        browser['meanRatio'] = mean_ratio
+
+    return {
+        "malicious": malicious,
+        "info": {
+            "meanRatio": numpy.mean(ratios),
+            "worstRatio": worst_ratio,
+            "browsers": [browser['configuration']['name'] for browser in browsers]
+        }
+    }
 
 
-result = check_ratios()
-print(args.id + ": " + json.dumps(result))
+if __name__ == '__main__':
+    main()
