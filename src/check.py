@@ -43,7 +43,7 @@ def fetch_responses(browsers, url):
 
 
 def generate_result(browsers):
-    malicious = False
+    result = "clean"
     ratios = []
     worst_ratio = 1.0
     for browser_index, browser in enumerate(browsers[:-1]):
@@ -53,13 +53,13 @@ def generate_result(browsers):
             if ratio < worst_ratio:
                 worst_ratio = ratio
                 if ratio < 0.999:
-                    malicious = True
+                    result = "suspicious"
 
         mean_ratio = numpy.mean(ratios)
         browser['meanRatio'] = mean_ratio
 
     return {
-        "malicious": malicious,
+        "result": result,
         "info": {
             "meanRatio": numpy.mean(ratios),
             "worstRatio": worst_ratio,
