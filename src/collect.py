@@ -13,7 +13,8 @@ def get_mandatory_env(env: str) -> str:
 
 
 def read_browsers():
-    with open('../res/browsers.json', 'r') as browsersFile:
+    browsersFilePath = os.path.dirname(__file__) + '/../res/browsers.json'
+    with open(browsersFilePath, 'r') as browsersFile:
         return json.load(browsersFile)
 
 

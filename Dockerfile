@@ -4,8 +4,8 @@ COPY . /tmp/
 
 RUN apt-get update -y
 
-RUN apt-get install python python-pip -y
+RUN apt-get install python3 python3-pip -y
 
-RUN pip install --requirement /tmp/requirements.txt
+RUN pip3 install --requirement /tmp/requirements.txt
 
-CMD python /tmp/src/check.py -i $ID -u $URL
+CMD python3 /tmp/src/check.py -i $ID -u $URL
