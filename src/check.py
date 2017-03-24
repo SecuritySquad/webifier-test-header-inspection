@@ -1,11 +1,12 @@
 import argparse
 import json
+import statistics
 from difflib import SequenceMatcher
 from urllib.parse import urlparse
 
-import numpy.core
 import requests
 from requests.exceptions import *
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from collect import read_browsers
 
@@ -43,26 +44,43 @@ def fetch_responses(browsers, url):
 
 
 def generate_result(browsers):
-    result = "CLEAN"
     ratios = []
     worst_ratio = 1.0
-    for browser_index, browser in enumerate(browsers[:-1]):
-        for other_browser_index, other_browser in enumerate(browsers[browser_index + 1:]):
-            ratio = SequenceMatcher(None, browser['response'], other_browser['response']).ratio()
+    diffs = []
+    worst_diff = 0
+    for browser_index_a, browser_a in enumerate(browsers[:-1]):
+        response_a = browser_a['response']
+        for browser_index_b, browser_b in enumerate(browsers[browser_index_a + 1:]):
+            response_b = browser_b['response']
+            matcher = SequenceMatcher(None, response_a, response_b)
+            ratio = matcher.ratio()
             ratios.append(ratio)
+            matching_blocks = matcher.get_matching_blocks()
+            matching_length = sum(match.size for match in matching_blocks)
+            max_response_size = max(len(response_a), len(response_b))
+            diff = max_response_size - matching_length
+            diffs.append(diff)
             if ratio < worst_ratio:
                 worst_ratio = ratio
-                if ratio < 0.999:
-                    result = "SUSPICIOUS"
+            if diff > worst_diff:
+                worst_diff = diff
+            print('checking browser {} against browser {} (total: {} browsers) diff: {}'
+                  .format(browser_index_a + 1, browser_index_b + browser_index_a + 2,
+                          len(browsers), diff))
 
-        mean_ratio = numpy.mean(ratios)
-        browser['meanRatio'] = mean_ratio
+    result = "MALICIOUS"
+    if 0 == worst_diff:
+        result = "CLEAN"
+    elif worst_diff <= 50:
+        result = "SUSPICIOUS"
 
     return {
         "result": result,
         "info": {
-            "meanRatio": numpy.mean(ratios),
+            "medianRatio": statistics.median(ratios),
             "worstRatio": worst_ratio,
+            "medianDiff": statistics.median(diffs),
+            "worstDiff": worst_diff,
             "browsers": [browser['configuration']['name'] for browser in browsers]
         }
     }
