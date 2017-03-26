@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 import requests
 from requests.exceptions import *
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 from collect import read_browsers
 
@@ -40,7 +39,7 @@ def fetch_responses(browsers, url):
         host = parse.netloc or None
         if host:
             browser['headers']['Host'] = host
-        browser['response'] = requests.get(url, headers=browser['headers']).text
+        browser['response'] = requests.get(url, headers=browser['headers'], verify=False).text
 
 
 def generate_result(browsers):
