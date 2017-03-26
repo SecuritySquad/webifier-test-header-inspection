@@ -52,7 +52,7 @@ def generate_result(browsers):
         for browser_index_b, browser_b in enumerate(browsers[browser_index_a + 1:]):
             response_b = browser_b['response']
             matcher = SequenceMatcher(None, response_a, response_b)
-            ratio = matcher.ratio()
+            ratio = matcher.quick_ratio()
             ratios.append(ratio)
             matching_blocks = matcher.get_matching_blocks()
             matching_length = sum(match.size for match in matching_blocks)
