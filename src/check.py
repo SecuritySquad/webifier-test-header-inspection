@@ -68,9 +68,9 @@ def generate_result(browsers):
                           len(browsers), diff))
 
     result = "MALICIOUS"
-    if 0 == worst_diff:
+    if worst_diff <= 50:
         result = "CLEAN"
-    elif worst_diff <= 50:
+    elif worst_diff <= 500:
         result = "SUSPICIOUS"
 
     return {
